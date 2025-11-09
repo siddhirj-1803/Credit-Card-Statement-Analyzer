@@ -1,0 +1,9 @@
+{
+    "rewrites": [
+      {
+        "source": "/api/:path*",
+        "destination": "https://credit-card-statement-analyzer.onrender.com/api/:path*"
+      }
+    ]
+  }
+  
