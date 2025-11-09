@@ -1,0 +1,187 @@
+You are an expert full-stack developer. Your task is to build a complete web application on Replit using the "React.js" and "Python (with Flask)" templates.
+
+Project Title: AI-Powered Credit Card Statement Analyzer
+
+Core Objective:
+Create a polished, professional, and easy-to-use application.
+
+A user uploads a PDF credit card statement and selects the issuer.
+
+The app parses the PDF and extracts all key data points from the account summary (e.g., New Balance, Credit Limit, Interest Charged, etc.).
+
+The user can enter a "Budget Goal".
+
+The user can then click a button to get AI-powered financial insights based on this comprehensive data and their budget.
+
+The entire app supports a Light/Dark mode toggle.
+
+This project is for a student's portfolio, so clarity, professionalism, and explainability are paramount.
+
+Technology Stack:
+
+Frontend (Single File): App.jsx (React with Hooks, lucide-react).
+
+Styling: Tailwind CSS (loaded via CDN, must support dark: prefixes).
+
+Backend: main.py (Python with Flask).
+
+PDF Parsing: pdfplumber, re.
+
+AI Generation: requests (to call the Gemini API).
+(These must be added to the Replit environment's requirements.txt or replit.nix file).
+
+Frontend (React - App.jsx) Requirements:
+
+1. UI/UX:
+
+Must be a clean, modern, single-page application.
+
+Must support a toggleable Light/Dark Mode. Default to 'dark'.
+
+The user's theme preference must be saved in localStorage.
+
+The main app div should have className={theme} to apply the theme.
+
+All Tailwind classes must be theme-aware (e.g., bg-gray-100 dark:bg-gray-900, text-gray-900 dark:text-white).
+
+The entire app should be centered on the page (max-w-2xl container).
+
+Use the "Inter" font.
+
+All elements must have rounded corners (rounded-lg or rounded-xl).
+
+2. Components:
+
+Header: A professional header with the title "Credit Card Statement Analyzer," an "Info" icon button, and a ThemeToggle button.
+
+Theme Toggle Button: A button in the header (using Sun and Moon icons from lucide-react) that toggles the theme state between 'light' and 'dark'.
+
+"How it Works" Button: Clicking the "Info" icon opens a modal. The modal text must explain the full stack: "This app uses a React + Tailwind frontend and a Python + Flask backend. The backend uses 'pdfplumber' and Regular Expressions (regex) to parse the PDF. After parsing, you can click 'Get AI Insights.' This sends the extracted data to our backend, which then uses the Google Gemini API to generate helpful financial tips based on your statement."
+
+File Uploader: An intuitive, dashed-border drag-and-drop component that accepts .pdf files only and shows the selected file's name.
+
+Issuer Dropdown: A styled dropdown menu. Options must include: "CFPB Sample (Working)", "Chase (Demo)", "American Express (Demo)", "Citi (Demo)", "Capital One (Demo)", "Discover (Demo)".
+
+Parse Button: A primary, styled button with the text "Parse Statement". It must be disabled until both a file is selected and an issuer is chosen.
+
+Loading State: The "Parse" button must show a loading spinner and be disabled when isLoading is true.
+
+Results Display (UPDATED): Displays all extracted data points in clean "Data Cards" (Label and Value) after a successful parse. This should now be a grid-cols-2 or grid-cols-3 layout to fit the new data.
+
+Error Handling: Show user-friendly errors in a red-bordered box (e.g., "Invalid file type").
+
+3. Budget Goal Feature (Frontend):
+
+State: Add const [budgetGoal, setBudgetGoal] = useState("");
+
+UI: After the "Parse Statement" button, add a new section with a simple, styled input field: <input type="number" placeholder="Enter budget goal (e.g., 1000)" ... />
+
+This input should update the budgetGoal state onChange.
+
+4. AI Insights Feature (Frontend):
+
+State: Add const [insights, setInsights] = useState(""); and const [isInsightsLoading, setIsInsightsLoading] = useState(false);.
+
+"Get AI Insights" Button: This button should only appear after extractedData is successfully set. It should be styled (e.g., bg-purple-600).
+
+handleGetInsights Function:
+
+This async function makes a POST request to the /api/insights endpoint.
+
+It must send a JSON body containing both the extractedData (which now has ~10+ fields) and the budgetGoal state:
+body: JSON.stringify({ extractedData: extractedData, budgetGoal: budgetGoal })
+
+Insights Display: When insights text exists, display it in a new, nicely formatted card (e.g., with a lightbulb icon) below the "Get AI Insights" button.
+
+Backend (Python/Flask - main.py) Requirements:
+
+1. Dependencies:
+
+Import Flask, request, jsonify, re, pdfplumber, io, requests, time, os, json.
+
+Import flask_cors and enable CORS for all origins (CORS(app)).
+
+2. PDF Parsing (UPDATED):
+
+Create a POST endpoint at /api/parse.
+
+Include a parse_statement(text, issuer) function that acts as a router.
+
+Include demo functions (parse_chase(text), etc.) that return hard-coded "N/A" or example data.
+
+Include a working function parse_cfpb_sample(text). This function must be upgraded to find all of the following data points:
+
+Total Balance Due (aka "New Balance")
+
+Payment Due Date
+
+Minimum Payment Due
+
+Card Last 4 Digits (from "Account Number")
+
+Billing Cycle Dates (aka "Opening/Closing Date")
+
+Previous Balance
+
+Payments, Credits
+
+Purchases
+
+Interest Charged
+
+Credit Access Line (Credit Limit)
+
+Available Credit
+
+Annual Percentage Rate (APR) (for Purchases)
+
+The function must initialize a data dictionary with all these keys set to "N/A" and then fill them using specific regex patterns for the CFPB sample PDF.
+
+3. AI Insights Feature (Backend):
+
+A. Gemini API Call Function:
+
+Create a helper function: def generate_insights_with_retry(parsed_data, budget_goal, max_retries=5):
+
+This function must implement exponential backoff for retries.
+
+Get the API key: apiKey = os.getenv("API_KEY", "").
+
+Define the API URL: apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=" + apiKey
+
+Dynamic System Prompt (UPDATED): The system prompt must be updated to acknowledge it is receiving a comprehensive data set, not just 5 points.
+
+budget_context = "The user has not set a budget goal."
+if budget_goal and budget_goal.strip():
+    try:
+        # Validate budget is a number
+        float(budget_goal)
+        budget_context = f"The user has set a monthly budget goal of ${budget_goal}. Please use this to personalize your advice."
+    except ValueError:
+        pass
+
+systemPrompt = f"You are a friendly financial assistant. A user has provided a *comprehensive summary* from their credit card statement (including balance, purchases, payments, and credit limit). {budget_context} Your task is to provide 2-3 brief, actionable, and encouraging insights based *only* on this data. Do not invent data. Format your response as a simple text paragraph. Be encouraging."
+
+
+User Query: userQuery = f"Here is my complete statement summary: {json.dumps(parsed_data)}. What are your insights?"
+
+Construct the payload (with systemInstruction and contents), use requests.post() to make the call, parse the JSON, and return the text.
+
+B. API Endpoint:
+
+Create a POST endpoint: @app.route("/api/insights", methods=["POST"])
+
+Get the JSON from the request: data = request.json
+
+Extract the data:
+parsed_data = data.get('extractedData')
+budget_goal = data.get('budgetGoal')
+
+Call the helper function:
+insight_text = generate_insights_with_retry(parsed_data, budget_goal)
+
+Return the insight text: return jsonify({"insights": insight_text}).
+
+4. Final Polish:
+
+Ensure all backend code is well-commented, especially the 12+ regex patterns for the parse_cfpb_sample function.
